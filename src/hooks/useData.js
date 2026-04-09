@@ -1,36 +1,47 @@
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import defaultContext from '../../data/context.json'
 
-const DEFAULTS = {
-  journal: [],
-  ideas: [],
-  projects: [],
-  context: defaultContext,
-}
+const DEFAULTS = { context: defaultContext }
 
 export function useData(file) {
-  const key = `cerveau2_${file}`
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [data, setData] = useState(() => {
+  const load = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(key)
-      if (stored) return JSON.parse(stored)
-    } catch {}
-    return DEFAULTS[file] ?? null
-  })
+      setLoading(true)
+      const res = await fetch(`/api/${file}`)
+      if (!res.ok) throw new Error('Erreur chargement')
+      const json = await res.json()
+      setData(Array.isArray(json) ? json : (Object.keys(json).length ? json : (DEFAULTS[file] ?? json)))
+    } catch (e) {
+      setError(e.message)
+      setData(DEFAULTS[file] ?? null)
+    } finally {
+      setLoading(false)
+    }
+  }, [file])
 
-  const save = useCallback((newData) => {
-    localStorage.setItem(key, JSON.stringify(newData))
-    setData(newData)
-  }, [key])
+  useEffect(() => { load() }, [load])
 
-  const append = useCallback((item) => {
-    setData(prev => {
-      const updated = Array.isArray(prev) ? [...prev, item] : { ...prev, ...item }
-      localStorage.setItem(key, JSON.stringify(updated))
-      return updated
+  const save = useCallback(async (newData) => {
+    await fetch(`/api/${file}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newData)
     })
-  }, [key])
+    setData(newData)
+  }, [file])
 
-  return { data, loading: false, error: null, save, append, reload: () => {} }
+  const append = useCallback(async (item) => {
+    await fetch(`/api/${file}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    })
+    setData(prev => Array.isArray(prev) ? [...prev, item] : { ...prev, ...item })
+  }, [file])
+
+  return { data, loading, error, save, append, reload: load }
 }
