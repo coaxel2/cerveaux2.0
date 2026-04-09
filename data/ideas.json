@@ -1,0 +1,26 @@
+[
+  {
+    "id": "idea-001",
+    "title": "Script Claude Code pour résumer des notes vocales",
+    "body": "Utiliser Whisper + Claude Code pour transcrire et structurer automatiquement les notes vocales en points d'action.",
+    "category": "tech",
+    "createdAt": "2026-04-07T09:12:00Z",
+    "status": "à explorer"
+  },
+  {
+    "id": "idea-002",
+    "title": "Routine de lecture 20 min avant déconnexion",
+    "body": "Remplacer le scroll passif par 20 minutes de lecture active chaque soir à 22h30.",
+    "category": "perso",
+    "createdAt": "2026-04-05T21:30:00Z",
+    "status": "en cours"
+  },
+  {
+    "id": "idea-003",
+    "title": "Créer un dashboard de veille tech hebdomadaire",
+    "body": "Agréger des flux RSS via N8N, résumer avec Claude, envoyer un digest Notion chaque lundi.",
+    "category": "tech",
+    "createdAt": "2026-04-03T14:00:00Z",
+    "status": "à explorer"
+  }
+]

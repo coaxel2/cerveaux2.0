@@ -1,0 +1,15 @@
+{
+  "name": "Axel",
+  "role": "Chef de Projet Digital",
+  "school": "YNOV Campus",
+  "alternance": "Orange",
+  "location": "Bordeaux / Talence",
+  "tools": ["N8N", "Notion", "Claude Code", "React", "MongoDB Atlas"],
+  "interests": ["motorsport", "Circuit PAU ARNOS", "automatisation", "IA", "tech watch"],
+  "notionDb": "da849cc0af674452b6172553dfdad9a5",
+  "preferences": {
+    "wakeTarget": "07:00",
+    "sleepTarget": "23:00",
+    "outputStyle": "concis, actionnable, sans tiret cadratin"
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "2026-04-07",
+    "date": "2026-04-07",
+    "lever": "07:05",
+    "coucher": "23:30",
+    "sport": "Course",
+    "energie": 8,
+    "note": "Bonne journée, session de code productive le matin.",
+    "score": 8.5
+  },
+  {
+    "id": "2026-04-08",
+    "date": "2026-04-08",
+    "lever": "07:20",
+    "coucher": "00:15",
+    "sport": "Aucun",
+    "energie": 6,
+    "note": "Journée longue, réunion qui s'est éternisée.",
+    "score": 6.5
+  },
+  {
+    "id": "2026-04-09",
+    "date": "2026-04-09",
+    "lever": "07:12",
+    "coucher": "",
+    "sport": "Aucun",
+    "energie": 7,
+    "note": "",
+    "score": null
+  }
+]

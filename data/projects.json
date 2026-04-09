@@ -1,0 +1,32 @@
+[
+  {
+    "id": "proj-001",
+    "title": "Cerveau 2.0",
+    "description": "App React + Vite de second cerveau personnel avec IA embarquée.",
+    "status": "en cours",
+    "progress": 30,
+    "nextStep": "Scaffold React + Vite complet",
+    "deadline": "2026-04-30",
+    "tags": ["tech", "perso"]
+  },
+  {
+    "id": "proj-002",
+    "title": "Workflow N8N offres alternance",
+    "description": "Agrégateur d'offres via France Travail API, La Bonne Alternance, Gmail parsing vers Notion.",
+    "status": "bloqué",
+    "progress": 65,
+    "nextStep": "Contourner OAuth2 via Execute Command Python",
+    "deadline": "2026-05-15",
+    "tags": ["tech", "automatisation"]
+  },
+  {
+    "id": "proj-003",
+    "title": "Track day PAU ARNOS",
+    "description": "Préparation et logistique pour la prochaine session circuit.",
+    "status": "à préparer",
+    "progress": 45,
+    "nextStep": "Signer la décharge + vérifier permis original",
+    "deadline": "2026-05-01",
+    "tags": ["perso"]
+  }
+]
