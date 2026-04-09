@@ -3,12 +3,14 @@ import Dashboard from './modules/Dashboard'
 import Journal from './modules/Journal'
 import Ideas from './modules/Ideas'
 import Projects from './modules/Projects'
+import AIAssistant from './modules/AIAssistant'
 
 const MODULES = [
   { id: 'dashboard', label: 'Vue d\'ensemble', icon: '◈' },
   { id: 'journal',   label: 'Journée',         icon: '◷' },
   { id: 'ideas',     label: 'Idées',            icon: '◇' },
   { id: 'projects',  label: 'Projets',          icon: '◫' },
+  { id: 'ai',        label: 'Assistant IA',     icon: '◎' },
 ]
 
 export default function App() {
@@ -19,6 +21,7 @@ export default function App() {
     journal:   Journal,
     ideas:     Ideas,
     projects:  Projects,
+    ai:        AIAssistant,
   }[active]
 
   const now = new Date()
@@ -29,7 +32,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="sidebar-logo-title">Cerveau 2.0</div>
-          <div className="sidebar-logo-sub">v1.0</div>
+          <div className="sidebar-logo-sub">v1.0 · LOCAL</div>
         </div>
 
         <nav className="sidebar-nav">

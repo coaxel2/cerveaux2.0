@@ -1,39 +1,53 @@
-import { useState, useCallback } from 'react'
-import defaultJournal from '../../data/journal.json'
-import defaultIdeas from '../../data/ideas.json'
-import defaultProjects from '../../data/projects.json'
-import defaultContext from '../../data/context.json'
+import { useState, useEffect, useCallback } from 'react'
 
-const DEFAULTS = {
-  journal: defaultJournal,
-  ideas: defaultIdeas,
-  projects: defaultProjects,
-  context: defaultContext,
-}
+const BASE = '/api'
 
 export function useData(file) {
-  const key = `cerveau2_${file}`
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [data, setData] = useState(() => {
+  const load = useCallback(async () => {
     try {
-      const stored = localStorage.getItem(key)
-      if (stored) return JSON.parse(stored)
-    } catch {}
-    return DEFAULTS[file] ?? null
-  })
+      setLoading(true)
+      const res = await fetch(`${BASE}/${file}`)
+      if (!res.ok) throw new Error('Fichier introuvable')
+      const json = await res.json()
+      setData(json)
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [file])
 
-  const save = useCallback((newData) => {
-    localStorage.setItem(key, JSON.stringify(newData))
-    setData(newData)
-  }, [key])
+  useEffect(() => { load() }, [load])
 
-  const append = useCallback((item) => {
-    setData(prev => {
-      const updated = Array.isArray(prev) ? [...prev, item] : { ...prev, ...item }
-      localStorage.setItem(key, JSON.stringify(updated))
-      return updated
-    })
-  }, [key])
+  const save = useCallback(async (newData) => {
+    try {
+      await fetch(`${BASE}/${file}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newData)
+      })
+      setData(newData)
+    } catch (e) {
+      console.error('Erreur sauvegarde:', e)
+    }
+  }, [file])
 
-  return { data, loading: false, error: null, save, append, reload: () => {} }
+  const append = useCallback(async (item) => {
+    try {
+      await fetch(`${BASE}/${file}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item)
+      })
+      setData(prev => Array.isArray(prev) ? [...prev, item] : { ...prev, ...item })
+    } catch (e) {
+      console.error('Erreur append:', e)
+    }
+  }, [file])
+
+  return { data, loading, error, save, append, reload: load }
 }

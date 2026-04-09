@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useData } from '../hooks/useData'
+import { useAI } from '../hooks/useAI'
 import { statusColor, uid, formatDate } from '../utils/helpers'
 
 const STATUSES = ['en cours', 'bloqué', 'à préparer', 'en pause', 'terminé']
@@ -17,7 +18,7 @@ function ProgressBar({ value, status }) {
   )
 }
 
-function ProjectCard({ project, onEdit, onDelete }) {
+function ProjectCard({ project, onEdit, onAI, onDelete }) {
   return (
     <div className="card" style={{ marginBottom: 12 }}>
       <div className="card-head">
@@ -26,6 +27,7 @@ function ProjectCard({ project, onEdit, onDelete }) {
           <span className={`badge ${statusColor(project.status)}`}>{project.status}</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <button style={{ fontSize: 11, color: 'var(--blue)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => onAI(project)}>IA</button>
           <button style={{ fontSize: 11, color: 'var(--text2)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => onEdit(project)}>éditer</button>
           <button style={{ fontSize: 11, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }} onClick={() => onDelete(project.id)}>suppr.</button>
         </div>
@@ -70,11 +72,15 @@ function ProjectCard({ project, onEdit, onDelete }) {
 const emptyForm = { title: '', description: '', status: 'en cours', progress: 0, nextStep: '', deadline: '', tags: [] }
 
 export default function Projects() {
-  const { data: projects, save } = useData('projects')
+  const { data: projects, save, loading } = useData('projects')
+  const { data: context } = useData('context')
+  const { ask, loading: aiLoading } = useAI()
 
   const [form, setForm] = useState(emptyForm)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
+  const [aiText, setAiText] = useState('')
+  const [selectedProject, setSelectedProject] = useState(null)
   const [filterStatus, setFilterStatus] = useState('tout')
 
   function setF(k, v) { setForm(f => ({ ...f, [k]: v })) }
@@ -86,7 +92,7 @@ export default function Projects() {
     }))
   }
 
-  function saveProject() {
+  async function saveProject() {
     if (!form.title.trim()) return
     let updated
     if (editing) {
@@ -94,7 +100,7 @@ export default function Projects() {
     } else {
       updated = [...(projects || []), { id: uid(), ...form }]
     }
-    save(updated)
+    await save(updated)
     setForm(emptyForm)
     setEditing(null)
     setShowForm(false)
@@ -106,8 +112,21 @@ export default function Projects() {
     setShowForm(true)
   }
 
-  function deleteProject(id) {
-    save((projects || []).filter(p => p.id !== id))
+  async function deleteProject(id) {
+    await save((projects || []).filter(p => p.id !== id))
+    if (selectedProject?.id === id) { setSelectedProject(null); setAiText('') }
+  }
+
+  async function analyseProject(p) {
+    setSelectedProject(p)
+    setAiText('')
+    const prompt = p.status === 'bloqué'
+      ? `Ce projet est bloqué. Propose 3 solutions concrètes pour le débloquer et relancer la progression.`
+      : `Analyse ce projet et propose un plan d'action pour les 2 prochaines semaines avec des étapes précises.`
+    const result = await ask(prompt, context,
+      `Projet : "${p.title}"\nStatut : ${p.status}\nAvancement : ${p.progress}%\nDescription : ${p.description || 'aucune'}\nProchaine étape : ${p.nextStep || 'non définie'}`
+    )
+    if (result) setAiText(result)
   }
 
   const filtered = (projects || []).filter(p => filterStatus === 'tout' || p.status === filterStatus)
@@ -167,7 +186,7 @@ export default function Projects() {
                   ))}
                 </div>
               </div>
-              <button className="btn btn-accent" onClick={saveProject}>
+              <button className="btn btn-accent" onClick={saveProject} disabled={loading}>
                 {editing ? 'Mettre à jour' : 'Créer le projet'}
               </button>
             </div>
@@ -185,10 +204,34 @@ export default function Projects() {
           ))}
         </div>
 
-        {filtered.length === 0
-          ? <div className="empty-state">Aucun projet dans ce filtre</div>
-          : filtered.map(p => <ProjectCard key={p.id} project={p} onEdit={startEdit} onDelete={deleteProject} />)
-        }
+        <div className="grid-2">
+          <div>
+            {filtered.length === 0
+              ? <div className="empty-state">Aucun projet dans ce filtre</div>
+              : filtered.map(p => (
+                <ProjectCard key={p.id} project={p} onEdit={startEdit} onAI={analyseProject} onDelete={deleteProject} />
+              ))
+            }
+          </div>
+
+          <div>
+            <div className="card" style={{ position: 'sticky', top: 0 }}>
+              <div className="card-head">
+                <span className="card-title">
+                  {selectedProject ? selectedProject.title.slice(0, 28) + '...' : 'Analyse IA'}
+                </span>
+              </div>
+              {aiLoading
+                ? <div className="ai-loading"><div className="dot-pulse"><span /><span /><span /></div><span>Analyse en cours...</span></div>
+                : aiText
+                  ? <div className="ai-output">{aiText}</div>
+                  : <div className="ai-output" style={{ color: 'var(--text3)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
+                      Clique sur "IA" sur un projet pour obtenir un plan d'action ou des pistes de déblocage.
+                    </div>
+              }
+            </div>
+          </div>
+        </div>
       </div>
     </>
   )
