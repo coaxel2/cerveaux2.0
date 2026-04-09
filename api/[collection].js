@@ -1,7 +1,7 @@
 import { getDb } from './_db.js'
 import { verifyToken } from './_auth.js'
 
-const ALLOWED = ['journal', 'ideas', 'projects', 'context']
+const ALLOWED = ['journal', 'ideas', 'projects', 'context', 'tasks', 'habits']
 
 export default async function handler(req, res) {
   const { collection } = req.query

@@ -3,6 +3,8 @@ import { useData } from '../hooks/useData'
 import { today, formatDate, computeScore } from '../utils/helpers'
 
 const SPORTS = ['Aucun', 'Course', 'Muscu', 'Vélo', 'Natation', 'Yoga', 'Marche', 'Autre']
+const TAGS_LIST = ['productif', 'social', 'créatif', 'stressant', 'reposant', 'intensif', 'focus', 'relax']
+const TAG_COLORS = { productif: 'badge-accent', social: 'badge-teal', créatif: 'badge-purple', stressant: 'badge-red', reposant: 'badge-blue', intensif: 'badge-amber', focus: 'badge-accent', relax: 'badge-gray' }
 
 function JournalEntry({ entry }) {
   const score = entry.score ?? computeScore(entry)
@@ -13,12 +15,20 @@ function JournalEntry({ entry }) {
         <span style={{ fontSize: 13, fontWeight: 500 }}>{formatDate(entry.date)}</span>
         {score !== null && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 500, color }}>{score.toFixed(1)}</span>}
       </div>
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: entry.note ? 10 : 0 }}>
+      {entry.photo && (
+        <img src={entry.photo} alt="" style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 8, marginBottom: 10 }} onError={e => e.target.style.display='none'} />
+      )}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: (entry.note || entry.tags?.length) ? 10 : 0 }}>
         {entry.lever && <span style={{ fontSize: 12, color: 'var(--text2)' }}>Lever <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{entry.lever}</span></span>}
         {entry.coucher && <span style={{ fontSize: 12, color: 'var(--text2)' }}>Coucher <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{entry.coucher}</span></span>}
         {entry.sport && entry.sport !== 'Aucun' && <span style={{ fontSize: 12, color: 'var(--teal)' }}>{entry.sport}</span>}
         {entry.energie && <span style={{ fontSize: 12, color: 'var(--text2)' }}>Énergie <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{entry.energie}/10</span></span>}
       </div>
+      {entry.tags?.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: entry.note ? 8 : 0 }}>
+          {entry.tags.map(t => <span key={t} className={`badge ${TAG_COLORS[t] || 'badge-gray'}`}>{t}</span>)}
+        </div>
+      )}
       {entry.note && <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.6 }}>{entry.note}</p>}
     </div>
   )
@@ -36,12 +46,16 @@ export default function Journal() {
     coucher: existing?.coucher || '',
     sport: existing?.sport || 'Aucun',
     energie: existing?.energie ?? 7,
-    note: existing?.note || ''
+    note: existing?.note || '',
+    tags: existing?.tags || [],
+    photo: existing?.photo || ''
   })
   const [saved, setSaved] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [filterTag, setFilterTag] = useState(null)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
+  function toggleTag(t) { setForm(f => ({ ...f, tags: f.tags.includes(t) ? f.tags.filter(x => x !== t) : [...f.tags, t] })) }
 
   function saveEntry() {
     if (!journal) return
@@ -54,7 +68,9 @@ export default function Journal() {
     setTimeout(() => setSaved(false), 2500)
   }
 
-  const history = journal ? [...journal].sort((a, b) => b.date.localeCompare(a.date)).slice(1, 10) : []
+  const history = journal ? [...journal].sort((a, b) => b.date.localeCompare(a.date)).slice(1) : []
+  const filteredHistory = filterTag ? history.filter(e => e.tags?.includes(filterTag)) : history
+  const usedTags = [...new Set(history.flatMap(e => e.tags || []))]
 
   return (
     <>
@@ -95,12 +111,27 @@ export default function Journal() {
                 </div>
               </div>
               <div className="form-group">
+                <label className="form-label">Tags</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {TAGS_LIST.map(t => (
+                    <button key={t} onClick={() => toggleTag(t)}
+                      className={`badge ${form.tags.includes(t) ? (TAG_COLORS[t] || 'badge-gray') : 'badge-gray'}`}
+                      style={{ cursor: 'pointer', opacity: form.tags.includes(t) ? 1 : 0.5, border: 'none' }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Photo du jour (URL)</label>
+                <input type="url" placeholder="https://..." value={form.photo} onChange={e => set('photo', e.target.value)} />
+                {form.photo && <img src={form.photo} alt="" style={{ marginTop: 8, width: '100%', height: 120, objectFit: 'cover', borderRadius: 8 }} onError={e => e.target.style.display='none'} />}
+              </div>
+              <div className="form-group">
                 <label className="form-label">Note libre</label>
                 <textarea placeholder="Ce qui s'est passé, ce que tu ressens..." value={form.note} onChange={e => set('note', e.target.value)} />
               </div>
-              <button className="btn btn-accent" onClick={saveEntry}>
-                {saved ? 'Enregistré' : 'Sauvegarder'}
-              </button>
+              <button className="btn btn-accent" onClick={saveEntry}>{saved ? 'Enregistré ✓' : 'Sauvegarder'}</button>
             </div>
           </div>
 
@@ -127,21 +158,37 @@ export default function Journal() {
           </div>
         </div>
 
+        {/* Historique */}
         <div className="card">
           <div className="card-head">
-            <span className="card-title">Historique récent</span>
+            <span className="card-title">Historique ({history.length})</span>
             <button className="btn btn-ghost" style={{ fontSize: 11 }} onClick={() => setShowHistory(v => !v)}>
               {showHistory ? 'Masquer' : 'Afficher'}
             </button>
           </div>
-          {showHistory
-            ? history.length === 0
-              ? <div className="empty-state">Aucune entrée précédente</div>
-              : history.map(e => <JournalEntry key={e.id} entry={e} />)
-            : <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
-                {history.length} entrée{history.length > 1 ? 's' : ''} disponible{history.length > 1 ? 's' : ''}
-              </div>
-          }
+          {showHistory && (
+            <>
+              {usedTags.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <button className={`badge ${!filterTag ? 'badge-accent' : 'badge-gray'}`} style={{ cursor: 'pointer', border: 'none' }} onClick={() => setFilterTag(null)}>tous</button>
+                  {usedTags.map(t => (
+                    <button key={t} className={`badge ${filterTag === t ? (TAG_COLORS[t] || 'badge-gray') : 'badge-gray'}`}
+                      style={{ cursor: 'pointer', border: 'none', opacity: filterTag === t ? 1 : 0.6 }}
+                      onClick={() => setFilterTag(filterTag === t ? null : t)}>{t}</button>
+                  ))}
+                </div>
+              )}
+              {filteredHistory.length === 0
+                ? <div className="empty-state">Aucune entrée</div>
+                : filteredHistory.slice(0, 20).map(e => <JournalEntry key={e.id} entry={e} />)
+              }
+            </>
+          )}
+          {!showHistory && (
+            <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+              {history.length} entrée{history.length > 1 ? 's' : ''} — clique pour afficher
+            </div>
+          )}
         </div>
       </div>
     </>

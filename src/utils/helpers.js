@@ -47,27 +47,48 @@ export function avg(arr, key) {
 
 export function statusColor(status) {
   const map = {
-    'en cours': 'badge-teal',
-    'bloqué': 'badge-red',
-    'à préparer': 'badge-amber',
-    'terminé': 'badge-accent',
-    'en pause': 'badge-gray',
-    'à explorer': 'badge-blue',
-    'à faire': 'badge-gray'
+    'en cours': 'badge-teal', 'bloqué': 'badge-red', 'à préparer': 'badge-amber',
+    'terminé': 'badge-accent', 'en pause': 'badge-gray', 'à explorer': 'badge-blue', 'à faire': 'badge-gray'
   }
   return map[status] || 'badge-gray'
 }
 
 export function catColor(cat) {
-  const map = {
-    tech: 'badge-blue',
-    perso: 'badge-teal',
-    motorsport: 'badge-amber',
-    projet: 'badge-purple'
-  }
+  const map = { tech: 'badge-blue', perso: 'badge-teal', motorsport: 'badge-amber', projet: 'badge-purple' }
   return map[cat] || 'badge-gray'
 }
 
 export function uid() {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
+
+export function getStreak(completions = []) {
+  if (!completions.length) return 0
+  const set = new Set(completions)
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  // Allow streak if completed today or yesterday
+  const todayStr = d.toISOString().slice(0, 10)
+  const yesterday = new Date(d)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yStr = yesterday.toISOString().slice(0, 10)
+  if (!set.has(todayStr) && !set.has(yStr)) return 0
+  const start = set.has(todayStr) ? new Date(d) : new Date(yesterday)
+  let streak = 0
+  const cur = new Date(start)
+  while (set.has(cur.toISOString().slice(0, 10))) {
+    streak++
+    cur.setDate(cur.getDate() - 1)
+  }
+  return streak
+}
+
+export function last30Days() {
+  const days = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    days.push(d.toISOString().slice(0, 10))
+  }
+  return days
 }
