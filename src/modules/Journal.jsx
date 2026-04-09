@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useData } from '../hooks/useData'
-import { useAI } from '../hooks/useAI'
 import { today, formatDate, computeScore } from '../utils/helpers'
 
 const SPORTS = ['Aucun', 'Course', 'Muscu', 'Vélo', 'Natation', 'Yoga', 'Marche', 'Autre']
@@ -28,9 +27,8 @@ function JournalEntry({ entry }) {
 }
 
 export default function Journal() {
-  const { data: journal, save, loading: dataLoading } = useData('journal')
+  const { data: journal, save } = useData('journal')
   const { data: context } = useData('context')
-  const { ask, loading: aiLoading } = useAI()
 
   const todayStr = today()
   const existing = journal?.find(e => e.date === todayStr)
@@ -43,12 +41,11 @@ export default function Journal() {
     note: existing?.note || ''
   })
   const [saved, setSaved] = useState(false)
-  const [aiText, setAiText] = useState('')
   const [showHistory, setShowHistory] = useState(false)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  async function saveEntry() {
+  function saveEntry() {
     if (!journal) return
     const entry = {
       id: todayStr,
@@ -59,22 +56,9 @@ export default function Journal() {
     const updated = journal.filter(e => e.date !== todayStr)
     updated.push(entry)
     updated.sort((a, b) => a.date.localeCompare(b.date))
-    await save(updated)
+    save(updated)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
-  }
-
-  async function generateSummary() {
-    const last = journal?.slice(-7) || []
-    const summary = last.map(e =>
-      `${e.date} : lever ${e.lever}, énergie ${e.energie}/10, sport ${e.sport}, note "${e.note || 'aucune'}"`
-    ).join('\n')
-    const result = await ask(
-      'Génère un résumé narratif de ma semaine en 4-5 phrases, puis 2 ajustements de rythme prioritaires.',
-      context,
-      `Journal des 7 derniers jours :\n${summary}`
-    )
-    if (result) setAiText(result)
   }
 
   const history = journal ? [...journal].sort((a, b) => b.date.localeCompare(a.date)).slice(1, 10) : []
@@ -133,14 +117,9 @@ export default function Journal() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button className="btn btn-accent" onClick={saveEntry} disabled={dataLoading}>
-                  {saved ? 'Enregistré' : 'Sauvegarder'}
-                </button>
-                <button className="btn btn-ghost" onClick={generateSummary} disabled={aiLoading}>
-                  {aiLoading ? 'Résumé...' : 'Résumé IA'}
-                </button>
-              </div>
+              <button className="btn btn-accent" onClick={saveEntry}>
+                {saved ? 'Enregistré' : 'Sauvegarder'}
+              </button>
             </div>
           </div>
 
@@ -166,13 +145,6 @@ export default function Journal() {
             ))}
           </div>
         </div>
-
-        {aiText && (
-          <div className="card">
-            <div className="card-head"><span className="card-title">Résumé IA de la semaine</span></div>
-            <div className="ai-output">{aiText}</div>
-          </div>
-        )}
 
         <div className="card">
           <div className="card-head">
