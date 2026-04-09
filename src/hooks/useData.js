@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import defaultContext from '../../data/context.json'
 
-const DEFAULTS = { context: defaultContext }
+function getToken() {
+  return localStorage.getItem('cerveau2_token')
+}
 
 export function useData(file) {
   const [data, setData] = useState(null)
@@ -11,13 +12,14 @@ export function useData(file) {
   const load = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch(`/api/${file}`)
+      const res = await fetch(`/api/${file}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      })
       if (!res.ok) throw new Error('Erreur chargement')
       const json = await res.json()
-      setData(Array.isArray(json) ? json : (Object.keys(json).length ? json : (DEFAULTS[file] ?? json)))
+      setData(json)
     } catch (e) {
       setError(e.message)
-      setData(DEFAULTS[file] ?? null)
     } finally {
       setLoading(false)
     }
@@ -28,7 +30,7 @@ export function useData(file) {
   const save = useCallback(async (newData) => {
     await fetch(`/api/${file}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
       body: JSON.stringify(newData)
     })
     setData(newData)
@@ -37,7 +39,7 @@ export function useData(file) {
   const append = useCallback(async (item) => {
     await fetch(`/api/${file}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
       body: JSON.stringify(item)
     })
     setData(prev => Array.isArray(prev) ? [...prev, item] : { ...prev, ...item })

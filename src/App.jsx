@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useAuth } from './hooks/useAuth'
+import Auth from './pages/Auth'
 import Dashboard from './modules/Dashboard'
 import Journal from './modules/Journal'
 import Ideas from './modules/Ideas'
@@ -12,7 +14,10 @@ const MODULES = [
 ]
 
 export default function App() {
+  const { auth, login, register, logout } = useAuth()
   const [active, setActive] = useState('dashboard')
+
+  if (!auth) return <Auth onLogin={login} onRegister={register} />
 
   const Page = { dashboard: Dashboard, journal: Journal, ideas: Ideas, projects: Projects }[active]
   const dateStr = new Date().toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase()
@@ -22,7 +27,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="sidebar-logo">
           <div className="sidebar-logo-title">Cerveau 2.0</div>
-          <div className="sidebar-logo-sub">v1.0</div>
+          <div className="sidebar-logo-sub" style={{ color: 'var(--accent)' }}>{auth.user.name}</div>
         </div>
         <nav className="sidebar-nav">
           {MODULES.map(m => (
@@ -34,6 +39,12 @@ export default function App() {
         </nav>
         <div className="sidebar-bottom">
           <div className="sidebar-date">{dateStr}</div>
+          <button
+            onClick={logout}
+            style={{ marginTop: 10, fontSize: 11, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)' }}
+          >
+            déconnexion
+          </button>
         </div>
       </aside>
       <main className="main">
