@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { useData } from '../hooks/useData'
-import { useAI } from '../hooks/useAI'
 import { avg, computeScore, formatDateShort, today } from '../utils/helpers'
 
 function MetricCard({ label, value, sub, color }) {
@@ -33,8 +31,6 @@ export default function Dashboard() {
   const { data: ideas } = useData('ideas')
   const { data: projects } = useData('projects')
   const { data: context } = useData('context')
-  const { ask, loading } = useAI()
-  const [aiText, setAiText] = useState('')
 
   const todayEntry = journal?.find(e => e.date === today())
   const last7 = journal?.slice(-7) || []
@@ -42,19 +38,6 @@ export default function Dashboard() {
   const activeProjects = projects?.filter(p => p.status !== 'terminé')?.length || 0
   const blockedProjects = projects?.filter(p => p.status === 'bloqué')?.length || 0
   const thisMonth = ideas?.filter(i => i.createdAt?.startsWith(new Date().toISOString().slice(0, 7)))?.length || 0
-
-  async function analyseWeek() {
-    const ctx = context
-    const summary = last7.map(e =>
-      `${e.date} : lever ${e.lever}, énergie ${e.energie}/10, sport ${e.sport}, score ${(e.score ?? computeScore(e))?.toFixed(1)}, note "${e.note || 'aucune'}"`
-    ).join('\n')
-    const result = await ask(
-      'Analyse cette semaine et donne-moi 3 recommandations concrètes pour améliorer mon rythme et ma productivité.',
-      ctx,
-      `Données journal :\n${summary}`
-    )
-    if (result) setAiText(result)
-  }
 
   return (
     <>
@@ -78,9 +61,7 @@ export default function Dashboard() {
 
         <div className="grid-2">
           <div className="card">
-            <div className="card-head">
-              <span className="card-title">Rythme des 7 derniers jours</span>
-            </div>
+            <div className="card-head"><span className="card-title">Rythme des 7 derniers jours</span></div>
             {last7.length === 0
               ? <div className="empty-state">Aucune donnée</div>
               : last7.map(e => <WeekBar key={e.id} entry={e} />)
@@ -88,39 +69,25 @@ export default function Dashboard() {
           </div>
 
           <div className="card">
-            <div className="card-head">
-              <span className="card-title">Projets en cours</span>
-            </div>
-            {projects?.filter(p => p.status !== 'terminé').map(p => (
-              <div className="row" key={p.id} style={{ alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{p.title}</div>
-                  <div className="bar-track">
-                    <div className="bar-fill" style={{
-                      width: `${p.progress}%`,
-                      background: p.status === 'bloqué' ? 'var(--red)' : p.status === 'à préparer' ? 'var(--amber)' : 'var(--teal)'
-                    }} />
+            <div className="card-head"><span className="card-title">Projets en cours</span></div>
+            {(projects || []).filter(p => p.status !== 'terminé').length === 0
+              ? <div className="empty-state">Aucun projet</div>
+              : (projects || []).filter(p => p.status !== 'terminé').map(p => (
+                <div className="row" key={p.id} style={{ alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>{p.title}</div>
+                    <div className="bar-track">
+                      <div className="bar-fill" style={{
+                        width: `${p.progress}%`,
+                        background: p.status === 'bloqué' ? 'var(--red)' : p.status === 'à préparer' ? 'var(--amber)' : 'var(--teal)'
+                      }} />
+                    </div>
                   </div>
+                  <span className="row-val">{p.progress}%</span>
                 </div>
-                <span className="row-val">{p.progress}%</span>
-              </div>
-            ))}
+              ))
+            }
           </div>
-        </div>
-
-        <div className="card">
-          <div className="card-head">
-            <span className="card-title">Analyse IA de la semaine</span>
-            <button className="btn btn-ghost" onClick={analyseWeek} disabled={loading}>
-              {loading ? 'Analyse...' : 'Analyser'}
-            </button>
-          </div>
-          {loading
-            ? <div className="ai-loading"><div className="dot-pulse"><span /><span /><span /></div><span>Analyse en cours...</span></div>
-            : aiText
-              ? <div className="ai-output">{aiText}</div>
-              : <div className="ai-output" style={{ color: 'var(--text3)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>Clique sur "Analyser" pour obtenir une analyse personnalisée de ta semaine.</div>
-          }
         </div>
       </div>
     </>

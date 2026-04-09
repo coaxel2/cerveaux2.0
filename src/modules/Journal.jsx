@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useData } from '../hooks/useData'
-import { useAI } from '../hooks/useAI'
 import { today, formatDate, computeScore } from '../utils/helpers'
 
 const SPORTS = ['Aucun', 'Course', 'Muscu', 'Vélo', 'Natation', 'Yoga', 'Marche', 'Autre']
@@ -12,9 +11,7 @@ function JournalEntry({ entry }) {
     <div className="card card-sm" style={{ marginBottom: 10 }}>
       <div className="card-head" style={{ marginBottom: 10 }}>
         <span style={{ fontSize: 13, fontWeight: 500 }}>{formatDate(entry.date)}</span>
-        {score !== null && (
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 500, color }}>{score.toFixed(1)}</span>
-        )}
+        {score !== null && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 500, color }}>{score.toFixed(1)}</span>}
       </div>
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: entry.note ? 10 : 0 }}>
         {entry.lever && <span style={{ fontSize: 12, color: 'var(--text2)' }}>Lever <span style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{entry.lever}</span></span>}
@@ -28,9 +25,8 @@ function JournalEntry({ entry }) {
 }
 
 export default function Journal() {
-  const { data: journal, save, loading: dataLoading } = useData('journal')
+  const { data: journal, save } = useData('journal')
   const { data: context } = useData('context')
-  const { ask, loading: aiLoading } = useAI()
 
   const todayStr = today()
   const existing = journal?.find(e => e.date === todayStr)
@@ -43,38 +39,19 @@ export default function Journal() {
     note: existing?.note || ''
   })
   const [saved, setSaved] = useState(false)
-  const [aiText, setAiText] = useState('')
   const [showHistory, setShowHistory] = useState(false)
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })) }
 
-  async function saveEntry() {
+  function saveEntry() {
     if (!journal) return
-    const entry = {
-      id: todayStr,
-      date: todayStr,
-      ...form,
-      score: computeScore({ ...form })
-    }
+    const entry = { id: todayStr, date: todayStr, ...form, score: computeScore({ ...form }) }
     const updated = journal.filter(e => e.date !== todayStr)
     updated.push(entry)
     updated.sort((a, b) => a.date.localeCompare(b.date))
-    await save(updated)
+    save(updated)
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
-  }
-
-  async function generateSummary() {
-    const last = journal?.slice(-7) || []
-    const summary = last.map(e =>
-      `${e.date} : lever ${e.lever}, énergie ${e.energie}/10, sport ${e.sport}, note "${e.note || 'aucune'}"`
-    ).join('\n')
-    const result = await ask(
-      'Génère un résumé narratif de ma semaine en 4-5 phrases, puis 2 ajustements de rythme prioritaires.',
-      context,
-      `Journal des 7 derniers jours :\n${summary}`
-    )
-    if (result) setAiText(result)
   }
 
   const history = journal ? [...journal].sort((a, b) => b.date.localeCompare(a.date)).slice(1, 10) : []
@@ -93,7 +70,6 @@ export default function Journal() {
         <div className="grid-2">
           <div className="card">
             <div className="card-head"><span className="card-title">Check-in du jour</span></div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div className="form-row" style={{ gap: 12 }}>
                 <div className="form-group" style={{ flex: 1 }}>
@@ -105,42 +81,26 @@ export default function Journal() {
                   <input type="time" value={form.coucher} onChange={e => set('coucher', e.target.value)} />
                 </div>
               </div>
-
               <div className="form-group">
                 <label className="form-label">Sport</label>
                 <select value={form.sport} onChange={e => set('sport', e.target.value)}>
                   {SPORTS.map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
-
               <div className="form-group">
                 <label className="form-label">Énergie ressentie</label>
                 <div className="range-wrap">
-                  <input type="range" min="1" max="10" step="1"
-                    value={form.energie}
-                    onChange={e => set('energie', parseInt(e.target.value))}
-                  />
+                  <input type="range" min="1" max="10" step="1" value={form.energie} onChange={e => set('energie', parseInt(e.target.value))} />
                   <span className="range-val">{form.energie}</span>
                 </div>
               </div>
-
               <div className="form-group">
                 <label className="form-label">Note libre</label>
-                <textarea
-                  placeholder="Ce qui s'est passé, ce que tu ressens..."
-                  value={form.note}
-                  onChange={e => set('note', e.target.value)}
-                />
+                <textarea placeholder="Ce qui s'est passé, ce que tu ressens..." value={form.note} onChange={e => set('note', e.target.value)} />
               </div>
-
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <button className="btn btn-accent" onClick={saveEntry} disabled={dataLoading}>
-                  {saved ? 'Enregistré' : 'Sauvegarder'}
-                </button>
-                <button className="btn btn-ghost" onClick={generateSummary} disabled={aiLoading}>
-                  {aiLoading ? 'Résumé...' : 'Résumé IA'}
-                </button>
-              </div>
+              <button className="btn btn-accent" onClick={saveEntry}>
+                {saved ? 'Enregistré' : 'Sauvegarder'}
+              </button>
             </div>
           </div>
 
@@ -167,13 +127,6 @@ export default function Journal() {
           </div>
         </div>
 
-        {aiText && (
-          <div className="card">
-            <div className="card-head"><span className="card-title">Résumé IA de la semaine</span></div>
-            <div className="ai-output">{aiText}</div>
-          </div>
-        )}
-
         <div className="card">
           <div className="card-head">
             <span className="card-title">Historique récent</span>
@@ -181,16 +134,14 @@ export default function Journal() {
               {showHistory ? 'Masquer' : 'Afficher'}
             </button>
           </div>
-          {showHistory && (
-            history.length === 0
+          {showHistory
+            ? history.length === 0
               ? <div className="empty-state">Aucune entrée précédente</div>
               : history.map(e => <JournalEntry key={e.id} entry={e} />)
-          )}
-          {!showHistory && (
-            <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
-              {history.length} entrée{history.length > 1 ? 's' : ''} disponible{history.length > 1 ? 's' : ''}
-            </div>
-          )}
+            : <div style={{ fontSize: 12, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>
+                {history.length} entrée{history.length > 1 ? 's' : ''} disponible{history.length > 1 ? 's' : ''}
+              </div>
+          }
         </div>
       </div>
     </>
