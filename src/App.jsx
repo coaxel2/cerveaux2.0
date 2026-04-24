@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import { useAuth } from './hooks/useAuth'
 import Auth from './pages/Auth'
 import Dashboard from './modules/Dashboard'
@@ -87,6 +88,7 @@ export default function App() {
       <main className="main">
         <Page />
       </main>
+      <SpeedInsights />
     </div>
   )
 }
